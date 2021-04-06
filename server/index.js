@@ -20,10 +20,9 @@ const pgClient = new Pool({
 });
 
 pgClient.on('connect', () => {
-  console.log("postgress connect")
   pgClient
     .query('CREATE TABLE IF NOT EXISTS values (number INT)')
-    .catch((err) => console.log('table not created', err));
+    .catch((err) => console.log(err));
 });
 
 // Redis Client Setup
@@ -38,17 +37,13 @@ const redisPublisher = redisClient.duplicate();
 // Express route handlers
 
 app.get('/', (req, res) => {
-  res.send('Welcome');
+  res.send('Hi');
 });
 
 app.get('/values/all', async (req, res) => {
-  try{
-    const values = await pgClient.query('SELECT * from values');
-    res.send(values.rows);
-  }catch(err){
-    console.log(err)
-  }
+  const values = await pgClient.query('SELECT * from values');
 
+  res.send(values.rows);
 });
 
 app.get('/values/current', async (req, res) => {
@@ -66,12 +61,7 @@ app.post('/values', async (req, res) => {
 
   redisClient.hset('values', index, 'Nothing yet!');
   redisPublisher.publish('insert', index);
-
-  try{
-    pgClient.query('INSERT INTO values(number) VALUES($1)', [index]);
-  }catch(err){
-    console.log(err)
-  }
+  pgClient.query('INSERT INTO values(number) VALUES($1)', [index]);
 
   res.send({ working: true });
 });
@@ -79,4 +69,3 @@ app.post('/values', async (req, res) => {
 app.listen(5000, (err) => {
   console.log('Listening');
 });
-
